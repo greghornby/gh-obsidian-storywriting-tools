@@ -12,6 +12,7 @@ const config: BuildConfig = {
 
   // 3. Bundling mode ("browser", "bun", or "node")
   target: "node",
+  format: "cjs",
 
   // 4. Code optimization flags
   minify: false,       // Shrinks file size

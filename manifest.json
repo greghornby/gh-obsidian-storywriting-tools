@@ -1,0 +1,9 @@
+{
+	"id": "gh-storywriting-tools",
+	"name": "GH Storywriting Tools",
+	"version": "1.0.0",
+	"minAppVersion": "1.0.0",
+	"description": "Personal use.",
+	"author": "Greg Hornby",
+	"isDesktopOnly": false
+}
