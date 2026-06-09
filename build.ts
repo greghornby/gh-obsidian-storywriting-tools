@@ -1,4 +1,7 @@
 import type { BuildConfig } from "bun";
+import { watch } from "node:fs";
+import { join } from "node:path";
+import { copyBuildToVault } from "./copyBuildToVault";
 
 const config: BuildConfig = {
   // 1. Entry points for the application (Supports arrays, objects, or globs)
@@ -31,15 +34,69 @@ const config: BuildConfig = {
   }
 };
 
-// Execute the build pipeline
-const result = await Bun.build(config);
+async function build(firstRun: boolean = false) {
+  // Execute the build pipeline
+  const result = await Bun.build(config);
 
-if (!result.success) {
-  console.error("Build failed:", result.logs);
-  process.exit(1);
+  if (!result.success) {
+    console.error("Build failed:", result.logs);
+    process.exit(1);
+  }
+
+  if (firstRun) {
+    console.log("Build succeeded! Generated files:");
+    for (const artifact of result.outputs) {
+      console.log(`- ${artifact.path} (${artifact.size} bytes)`);
+    }
+  } else {
+    console.log("Rebuild succeeded!");
+  }
+
+  copyBuildToVault();
 }
 
-console.log("Build succeeded! Generated files:");
-for (const artifact of result.outputs) {
-  console.log(`- ${artifact.path} (${artifact.size} bytes)`);
+const isWatch = process.argv.includes("--watch");
+
+await build(true);
+
+if (isWatch) {
+  let timer: Timer | undefined;
+  let building = false;
+  let pending = false;
+
+  const rebuild = async () => {
+    if (building) {
+      pending = true;
+      return;
+    }
+
+    building = true;
+
+    try {
+      await build();
+    } finally {
+      building = false;
+
+      if (pending) {
+        pending = false;
+        await rebuild();
+      }
+    }
+  };
+
+  watch(
+    join(import.meta.dir, "src"),
+    { recursive: true },
+    (_event, filename) => {
+      if (!filename) return;
+
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        console.log(`Changed: src/${filename}`);
+        rebuild();
+      }, 100);
+    },
+  );
+
+  console.log("Watching src...");
 }

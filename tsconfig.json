@@ -15,5 +15,5 @@
 		"allowSyntheticDefaultImports": true,
 		"lib": ["ES2021", "DOM"]
 	},
-	"include": ["build.ts", "src/**/*.ts"]
+	"include": ["build.ts", "copyBuildToVault.ts", "src/**/*.ts"]
 }
