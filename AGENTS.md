@@ -16,6 +16,12 @@
 bun run build
 ```
 
+- Typecheck without building:
+
+```powershell
+bun run typecheck
+```
+
 - Watch `src` and rebuild on changes:
 
 ```powershell
@@ -77,6 +83,13 @@ COPY_BUILD_TO_VAULT_ROOT=C:\Path\To\Obsidian\Vault
 
 ## Verification
 - For source changes, run:
+
+```powershell
+bun run typecheck
+bun run build
+```
+
+- For build-script or packaging-only changes, run:
 
 ```powershell
 bun run build

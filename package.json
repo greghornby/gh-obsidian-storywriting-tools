@@ -15,6 +15,7 @@
   "type": "commonjs",
   "main": "src/index.ts",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "bun ./build.ts",
     "watch": "bun ./build.ts --watch"
   },
