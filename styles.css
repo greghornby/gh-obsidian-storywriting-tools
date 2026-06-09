@@ -1,0 +1,27 @@
+.markdown-source-view,
+.markdown-preview-view {
+  position: relative;
+}
+
+.gh-frontmatter-visibility-toggle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.gh-frontmatter-visibility-toggle:hover {
+  background: var(--background-modifier-hover);
+}
+
+.gh-frontmatter-hidden .metadata-container {
+  display: none !important;
+}
