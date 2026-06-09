@@ -1,12 +1,42 @@
 import { Plugin } from 'obsidian';
+import picomatch from 'picomatch';
+
+type GlobMatcher = ReturnType<typeof picomatch>;
 
 export class PinnedMenu {
-  constructor(private plugin: Plugin) {}
+  private includeGlob = '';
+  private includeMatcher: GlobMatcher | null = null;
+
+  constructor(
+    private plugin: Plugin,
+    includeGlob: string,
+  ) {
+    this.setIncludeGlob(includeGlob);
+  }
 
   register() {}
 
   unregister() {
     this.removeAll();
+  }
+
+  setIncludeGlob(includeGlob: string) {
+    this.includeGlob = includeGlob;
+
+    try {
+      this.includeMatcher = picomatch(includeGlob);
+    } catch (error) {
+      console.error('Invalid PinnedMenu include glob:', includeGlob, error);
+      this.includeMatcher = null;
+    }
+  }
+
+  shouldInclude(filePath: string) {
+    if (!this.includeMatcher) {
+      return false;
+    }
+
+    return this.includeMatcher(filePath);
   }
 
   addElement(hostEl: HTMLElement, element: HTMLElement) {

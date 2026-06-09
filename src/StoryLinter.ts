@@ -3,11 +3,32 @@ import {
   TAbstractFile,
   TFile,
 } from 'obsidian';
+import picomatch from 'picomatch';
+
+type GlobMatcher = ReturnType<typeof picomatch>;
 
 export class StoryLinter {
   private ignoredNextModify = new Set<string>();
+  private includeGlob = '';
+  private includeMatcher: GlobMatcher | null = null;
 
-  constructor(private plugin: Plugin) {}
+  constructor(
+    private plugin: Plugin,
+    includeGlob: string,
+  ) {
+    this.setIncludeGlob(includeGlob);
+  }
+
+  setIncludeGlob(includeGlob: string) {
+    this.includeGlob = includeGlob;
+
+    try {
+      this.includeMatcher = picomatch(includeGlob);
+    } catch (error) {
+      console.error('Invalid StoryLinter include glob:', includeGlob, error);
+      this.includeMatcher = null;
+    }
+  }
 
   register() {
     this.plugin.registerEvent(
@@ -35,6 +56,10 @@ export class StoryLinter {
       return;
     }
 
+    if (!this.shouldLintFile(file)) {
+      return;
+    }
+
     const content = await this.plugin.app.vault.read(file);
     const normalizedContent = this.normalizeNewlinePairs(content);
 
@@ -44,6 +69,14 @@ export class StoryLinter {
 
     this.ignoredNextModify.add(file.path);
     await this.plugin.app.vault.modify(file, normalizedContent);
+  }
+
+  private shouldLintFile(file: TFile) {
+    if (!this.includeMatcher) {
+      return false;
+    }
+
+    return this.includeMatcher(file.path);
   }
 
   private normalizeNewlinePairs(content: string) {

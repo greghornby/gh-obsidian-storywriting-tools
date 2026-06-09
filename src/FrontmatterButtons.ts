@@ -43,6 +43,10 @@ export class FrontmatterButtons {
     this.removeAll();
   }
 
+  refresh() {
+    this.sync();
+  }
+
   private sync() {
     const leaves = this.plugin.app.workspace.getLeavesOfType('markdown')
       .filter((leaf) => isFrontmatterLeaf(leaf)) as FrontmatterLeaf[];
@@ -60,6 +64,12 @@ export class FrontmatterButtons {
   }
 
   private syncTarget(target: FrontmatterTarget) {
+    if (!this.pinnedMenu.shouldInclude(target.filePath)) {
+      this.removeTargetButton(target);
+      this.setFrontmatterCSS(target.el, false);
+      return;
+    }
+
     const button = this.getOrCreateButton(target);
     const isHidden = this.filesWithFrontmatterHidden.has(target.filePath);
 
@@ -117,6 +127,14 @@ export class FrontmatterButtons {
 
   private setFrontmatterCSS(markdownViewEl: HTMLElement, isHidden: boolean) {
     markdownViewEl.classList.toggle('gh-frontmatter-hidden', isHidden);
+  }
+
+  private removeTargetButton(target: FrontmatterTarget) {
+    target.el
+      .querySelectorAll('.gh-frontmatter-visibility-toggle')
+      .forEach((button) => {
+        this.pinnedMenu.removeElement(button);
+      });
   }
 
   private removeLeafButtons(leaf: FrontmatterLeaf) {
