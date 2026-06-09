@@ -1,13 +1,23 @@
-.markdown-source-view,
-.markdown-preview-view {
+.gh-pinned-menu-host {
   position: relative;
 }
 
-.gh-frontmatter-visibility-toggle {
+.gh-pinned-menu {
   position: absolute;
   top: 8px;
   left: 8px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.gh-pinned-menu-row {
+  display: flex;
+}
+
+.gh-frontmatter-visibility-toggle {
   padding: 4px 8px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
