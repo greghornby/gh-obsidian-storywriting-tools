@@ -1,0 +1,24 @@
+{
+  "name": "gh-obsidian-storywriting-tools",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/greghornby/gh-obsidian-storywriting-tools#readme",
+  "bugs": {
+    "url": "https://github.com/greghornby/gh-obsidian-storywriting-tools/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greghornby/gh-obsidian-storywriting-tools.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "obsidian": "^1.13.0"
+  }
+}
