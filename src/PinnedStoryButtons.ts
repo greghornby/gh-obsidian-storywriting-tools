@@ -5,6 +5,8 @@ import {
 
 export class PinnedStoryButtons {
   private toggleMetadataButton: ToggleMetadataButton;
+  private sceneBreakButton = new SceneBreakButton();
+  private emDashButton = new EmDashButton();
 
   constructor(private pinnedMenu: PinnedMenu) {
     this.toggleMetadataButton = new ToggleMetadataButton(this.pinnedMenu);
@@ -21,10 +23,28 @@ export class PinnedStoryButtons {
         this.toggleMetadataButton.setFrontmatterCSS(target.el, false);
       },
     });
+
+    this.pinnedMenu.addItem({
+      id: SceneBreakButton.sceneBreakItemId,
+      create: () => this.sceneBreakButton.createSceneBreakButton(),
+      update: (element, target) => {
+        this.sceneBreakButton.updateSceneBreakButton(element, target);
+      },
+    });
+
+    this.pinnedMenu.addItem({
+      id: EmDashButton.emDashItemId,
+      create: () => this.emDashButton.createEmDashButton(),
+      update: (element, target) => {
+        this.emDashButton.updateEmDashButton(element, target);
+      },
+    });
   }
 
   unregister() {
     this.pinnedMenu.removeItem(ToggleMetadataButton.toggleMetadataItemId);
+    this.pinnedMenu.removeItem(SceneBreakButton.sceneBreakItemId);
+    this.pinnedMenu.removeItem(EmDashButton.emDashItemId);
   }
 
 
@@ -42,7 +62,6 @@ class ToggleMetadataButton {
     const button = document.createElement('button');
 
     button.type = 'button';
-    button.className = 'gh-frontmatter-visibility-toggle';
     return button;
   }
 
@@ -74,5 +93,75 @@ class ToggleMetadataButton {
 
    setFrontmatterCSS(markdownViewEl: HTMLElement, isHidden: boolean) {
     markdownViewEl.classList.toggle('gh-frontmatter-hidden', isHidden);
+  }
+}
+
+class SceneBreakButton {
+  static sceneBreakItemId = 'scene-break';
+
+  createSceneBreakButton() {
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = 'Scene Break';
+    return button;
+  }
+
+  updateSceneBreakButton(element: HTMLElement, target: PinnedMenuTarget) {
+    if (!(element instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    element.onclick = () => {
+      this.insertSceneBreak(target);
+    };
+  }
+
+  private insertSceneBreak(target: PinnedMenuTarget) {
+    const editor = target.markdownView.editor;
+    const cursor = editor.getCursor();
+    const line = editor.getLine(cursor.line);
+
+    if (line.trim().length === 0) {
+      editor.replaceRange('---\n', {line: cursor.line, ch: 0}, {line: cursor.line, ch: line.length});
+      editor.setCursor({line: cursor.line + 1, ch: 0});
+      return;
+    }
+
+    editor.replaceRange('\n---\n', {line: cursor.line, ch: line.length});
+    editor.setCursor({line: cursor.line + 2, ch: 0});
+  }
+}
+
+class EmDashButton {
+  static emDashItemId = 'em-dash';
+
+  createEmDashButton() {
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = 'Emdash';
+    return button;
+  }
+
+  updateEmDashButton(element: HTMLElement, target: PinnedMenuTarget) {
+    if (!(element instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    element.onclick = () => {
+      this.insertEmDash(target);
+    };
+  }
+
+  private insertEmDash(target: PinnedMenuTarget) {
+    const editor = target.markdownView.editor;
+    const cursor = editor.getCursor();
+
+    editor.replaceRange('—', cursor);
+    editor.setCursor({
+      line: cursor.line,
+      ch: cursor.ch + 1,
+    });
   }
 }

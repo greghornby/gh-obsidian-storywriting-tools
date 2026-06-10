@@ -75,6 +75,47 @@ COPY_BUILD_TO_VAULT_ROOT=C:\Path\To\Obsidian\Vault
 - `styles.css` must stay at repo root unless `copyBuildToVault.ts` is updated.
 - For personal plugin changes, prefer small direct edits over broad scaffolding.
 
+## Pinned Menu Architecture
+- `src/PinnedMenu.ts` owns the shared pinned menu surface.
+- `PinnedMenu` is responsible for:
+  - finding markdown leaves
+  - finding `.markdown-source-view` and `.markdown-preview-view` containers
+  - applying the pinned menu include glob
+  - creating/removing `.gh-pinned-menu`
+  - rendering registered menu item rows
+  - managing the collapse/expand notch
+- Feature classes should not rediscover markdown leaves or append directly to markdown containers.
+- Feature classes should register menu items with `PinnedMenu.addItem(...)`.
+- `PinnedMenuTarget` gives menu items the active context:
+  - `el`: source or preview container element
+  - `filePath`: vault path for the current markdown file
+  - `leaf`: markdown workspace leaf
+  - `markdownView`: Obsidian `MarkdownView`
+
+## Pinned Story Buttons
+- `src/PinnedStoryButtons.ts` is the feature class for story-writing pinned controls.
+- `PinnedStoryButtons` registers all story buttons with `PinnedMenu`.
+- Each button should be implemented as a small class in `PinnedStoryButtons.ts` unless it grows large enough to justify its own file.
+- A button class should expose:
+  - a static item id
+  - a `create...Button()` method that creates and styles the button element
+  - an `update...Button(element, target)` method that updates label/state and click behavior for the current `PinnedMenuTarget`
+- Button click handlers that edit markdown should use `target.markdownView.editor`.
+- After a button changes state that affects pinned menu rendering, call `pinnedMenu.refresh()`.
+- Add a dedicated CSS class for each new button, then include it in the shared pinned button styling in `styles.css`.
+
+Example item registration:
+
+```ts
+this.pinnedMenu.addItem({
+  id: ExampleButton.exampleItemId,
+  create: () => this.exampleButton.createExampleButton(),
+  update: (element, target) => {
+    this.exampleButton.updateExampleButton(element, target);
+  },
+});
+```
+
 ## Coding Preferences
 - TypeScript and JavaScript: 2-space indentation.
 - PowerShell examples: 2-space indentation.

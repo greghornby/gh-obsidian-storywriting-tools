@@ -4,20 +4,25 @@
 
 .gh-pinned-menu {
   position: absolute;
-  top: 8px;
-  left: 8px;
   z-index: 10;
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: 0;
   align-items: flex-start;
 }
 
 .gh-pinned-menu-rows {
-  display: flex;
-  flex-direction: column;
+  display: inline-grid;
+  grid-auto-rows: min-content;
   gap: 4px;
-  align-items: flex-start;
+  align-items: stretch;
+  padding: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 0 0 6px 0;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px) saturate(1.2);
 }
 
 .gh-pinned-menu.is-collapsed .gh-pinned-menu-rows {
@@ -26,27 +31,24 @@
 
 .gh-pinned-menu-row {
   display: flex;
+  min-width: 100%;
 }
 
-.gh-pinned-menu-notch,
-.gh-frontmatter-visibility-toggle {
-  padding: 4px 8px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-  font-size: var(--font-ui-smaller);
-  line-height: 1.4;
-  cursor: pointer;
+.gh-pinned-menu-row > button {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .gh-pinned-menu-notch {
   min-width: 24px;
+  border-radius: 0 6px 6px 0;
+  border-left: 0;
 }
 
-.gh-pinned-menu-notch:hover,
-.gh-frontmatter-visibility-toggle:hover {
-  background: var(--background-modifier-hover);
+.gh-pinned-menu.is-collapsed .gh-pinned-menu-notch {
+  border-left: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
 }
 
 .gh-frontmatter-hidden .metadata-container {
