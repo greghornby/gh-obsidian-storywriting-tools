@@ -8,15 +8,27 @@
   left: 8px;
   z-index: 10;
   display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.gh-pinned-menu-rows {
+  display: flex;
   flex-direction: column;
   gap: 4px;
   align-items: flex-start;
+}
+
+.gh-pinned-menu.is-collapsed .gh-pinned-menu-rows {
+  display: none;
 }
 
 .gh-pinned-menu-row {
   display: flex;
 }
 
+.gh-pinned-menu-notch,
 .gh-frontmatter-visibility-toggle {
   padding: 4px 8px;
   border: 1px solid var(--background-modifier-border);
@@ -28,6 +40,11 @@
   cursor: pointer;
 }
 
+.gh-pinned-menu-notch {
+  min-width: 24px;
+}
+
+.gh-pinned-menu-notch:hover,
 .gh-frontmatter-visibility-toggle:hover {
   background: var(--background-modifier-hover);
 }

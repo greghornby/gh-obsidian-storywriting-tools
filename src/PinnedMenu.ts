@@ -28,6 +28,7 @@ export class PinnedMenu {
   private includeGlob = '';
   private includeMatcher: GlobMatcher | null = null;
   private items = new Map<string, PinnedMenuItem>();
+  private isCollapsed = false;
 
   constructor(
     private plugin: Plugin,
@@ -115,18 +116,22 @@ export class PinnedMenu {
 
     const menu = this.getOrCreateMenu(target.el);
 
+    const rowsEl = this.getOrCreateRowsEl(menu);
+
     for (const item of this.items.values()) {
-      const element = this.getOrCreateItemElement(menu, item, target);
+      const element = this.getOrCreateItemElement(rowsEl, item, target);
       item.update?.(element, target);
     }
+
+    this.syncNotch(menu);
   }
 
   private getOrCreateItemElement(
-    menu: HTMLElement,
+    rowsEl: HTMLElement,
     item: PinnedMenuItem,
     target: PinnedMenuTarget,
   ) {
-    const existingRow = Array.from(menu.children)
+    const existingRow = Array.from(rowsEl.children)
       .find((child) => child instanceof HTMLElement && child.dataset.pinnedMenuItemId === item.id);
 
     if (existingRow instanceof HTMLElement) {
@@ -145,7 +150,7 @@ export class PinnedMenu {
     row.className = 'gh-pinned-menu-row';
     row.dataset.pinnedMenuItemId = item.id;
     row.appendChild(element);
-    menu.appendChild(row);
+    rowsEl.appendChild(row);
     return element;
   }
 
@@ -190,7 +195,62 @@ export class PinnedMenu {
 
     menu.className = 'gh-pinned-menu';
     hostEl.appendChild(menu);
+    this.getOrCreateRowsEl(menu);
+    this.getOrCreateNotch(menu);
     return menu;
+  }
+
+  private getOrCreateRowsEl(menu: HTMLElement) {
+    const existingRowsEl = menu.querySelector<HTMLElement>(
+      ':scope > .gh-pinned-menu-rows',
+    );
+
+    if (existingRowsEl) {
+      return existingRowsEl;
+    }
+
+    const rowsEl = document.createElement('div');
+
+    rowsEl.className = 'gh-pinned-menu-rows';
+    menu.appendChild(rowsEl);
+    return rowsEl;
+  }
+
+  private getOrCreateNotch(menu: HTMLElement) {
+    const existingNotch = menu.querySelector<HTMLButtonElement>(
+      ':scope > .gh-pinned-menu-notch',
+    );
+
+    if (existingNotch) {
+      return existingNotch;
+    }
+
+    const notch = document.createElement('button');
+
+    notch.type = 'button';
+    notch.className = 'gh-pinned-menu-notch';
+    notch.addEventListener('click', () => {
+      this.toggleCollapsed();
+    });
+
+    menu.appendChild(notch);
+    this.syncNotch(menu);
+    return notch;
+  }
+
+  private toggleCollapsed() {
+    this.isCollapsed = !this.isCollapsed;
+    this.sync();
+  }
+
+  private syncNotch(menu: HTMLElement) {
+    menu.classList.toggle('is-collapsed', this.isCollapsed);
+
+    const notch = this.getOrCreateNotch(menu);
+
+    notch.textContent = this.isCollapsed ? '>' : '<';
+    notch.setAttribute('aria-label', this.isCollapsed ? 'Expand pinned menu' : 'Collapse pinned menu');
+    notch.setAttribute('aria-expanded', String(!this.isCollapsed));
   }
 
   private removeTargetMenu(target: PinnedMenuTarget) {
@@ -199,7 +259,13 @@ export class PinnedMenu {
       return;
     }
 
-    for (const row of Array.from(menu.children)) {
+    const rowsEl = menu.querySelector<HTMLElement>(':scope > .gh-pinned-menu-rows');
+    if (!rowsEl) {
+      menu.remove();
+      return;
+    }
+
+    for (const row of Array.from(rowsEl.children)) {
       if (!(row instanceof HTMLElement)) {
         continue;
       }
@@ -232,7 +298,8 @@ export class PinnedMenu {
     document
       .querySelectorAll<HTMLElement>('.gh-pinned-menu')
       .forEach((menu) => {
-        if (menu.children.length === 0) {
+        const rowsEl = menu.querySelector<HTMLElement>(':scope > .gh-pinned-menu-rows');
+        if (!rowsEl || rowsEl.children.length === 0) {
           menu.remove();
         }
       });
