@@ -1,7 +1,7 @@
 import { Plugin } from 'obsidian';
-import { FrontmatterButtons } from './FrontmatterButtons';
 import { GHStoryWritingToolsSettingTab } from './GHStoryWritingToolsSettingTab';
 import { PinnedMenu } from './PinnedMenu';
+import { PinnedStoryButtons } from './PinnedStoryButtons';
 import {
   DEFAULT_SETTINGS,
   GHStoryWritingToolsSettings,
@@ -12,26 +12,26 @@ export default class GHStoryWritingTools extends Plugin {
   settings: GHStoryWritingToolsSettings = {...DEFAULT_SETTINGS};
 
   private pinnedMenu!: PinnedMenu;
-  private frontmatterButtons!: FrontmatterButtons;
+  private pinnedStoryButtons!: PinnedStoryButtons;
   private storyLinter: StoryLinter | null = null;
 
   async onload() {
     await this.loadSettings();
 
     this.pinnedMenu = new PinnedMenu(this, this.settings.pinnedMenuIncludeGlob);
-    this.frontmatterButtons = new FrontmatterButtons(this, this.pinnedMenu);
-    this.storyLinter = new StoryLinter(this, this.settings.storyLinterIncludeGlob);
+    this.pinnedStoryButtons = new PinnedStoryButtons(this.pinnedMenu);
+    this.storyLinter = new StoryLinter(this, this.settings);
 
     this.addSettingTab(new GHStoryWritingToolsSettingTab(this.app, this));
 
     this.pinnedMenu.register();
-    this.frontmatterButtons.register();
+    this.pinnedStoryButtons.register();
     this.storyLinter.register();
   }
 
   onunload() {
     this.storyLinter?.unregister();
-    this.frontmatterButtons.unregister();
+    this.pinnedStoryButtons.unregister();
     this.pinnedMenu.unregister();
   }
 
@@ -47,6 +47,6 @@ export default class GHStoryWritingTools extends Plugin {
     await this.saveData(this.settings);
     this.storyLinter?.setIncludeGlob(this.settings.storyLinterIncludeGlob);
     this.pinnedMenu.setIncludeGlob(this.settings.pinnedMenuIncludeGlob);
-    this.frontmatterButtons.refresh();
+    this.pinnedMenu.refresh();
   }
 }

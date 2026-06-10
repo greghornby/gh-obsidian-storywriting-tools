@@ -1,7 +1,7 @@
 import type { BuildConfig } from "bun";
 import { watch } from "node:fs";
-import { join } from "node:path";
 import { copyBuildToVault } from "./copyBuildToVault";
+import picomatch from "picomatch";
 
 const config: BuildConfig = {
   // 1. Entry points for the application (Supports arrays, objects, or globs)
@@ -84,19 +84,23 @@ if (isWatch) {
     }
   };
 
-  watch(
-    join(import.meta.dir, "src"),
-    { recursive: true },
-    (_event, filename) => {
-      if (!filename) return;
+  const matchFileGlobs = ["src/**/*", "styles.css"];
+  const matchFile = picomatch(matchFileGlobs);
 
+  watch(
+    import.meta.dir,
+    { recursive: true },
+    (_event, _filename) => {
+      const filename = _filename?.replaceAll("\\", "/");
+      if (!filename) return;
+      if (!matchFile(filename)) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
-        console.log(`Changed: src/${filename}`);
+        console.log(`Changed: ${filename}`);
         rebuild();
       }, 100);
     },
   );
 
-  console.log("Watching src...");
+  console.log(`Watching ${JSON.stringify(matchFileGlobs)}...`);
 }
