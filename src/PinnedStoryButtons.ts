@@ -3,31 +3,42 @@ import {
   PinnedMenuTarget,
 } from './PinnedMenu';
 
-const toggleMetadataItemId = 'toggle-metadata';
-
 export class PinnedStoryButtons {
-  private filesWithFrontmatterHidden = new Set<string>();
+  private toggleMetadataButton: ToggleMetadataButton;
 
-  constructor(private pinnedMenu: PinnedMenu) {}
+  constructor(private pinnedMenu: PinnedMenu) {
+    this.toggleMetadataButton = new ToggleMetadataButton(this.pinnedMenu);
+  }
 
   register() {
     this.pinnedMenu.addItem({
-      id: toggleMetadataItemId,
-      create: () => this.createToggleMetadataButton(),
+      id: ToggleMetadataButton.toggleMetadataItemId,
+      create: () => this.toggleMetadataButton.createToggleMetadataButton(),
       update: (element, target) => {
-        this.updateToggleMetadataButton(element, target);
+        this.toggleMetadataButton.updateToggleMetadataButton(element, target);
       },
       remove: (_element, target) => {
-        this.setFrontmatterCSS(target.el, false);
+        this.toggleMetadataButton.setFrontmatterCSS(target.el, false);
       },
     });
   }
 
   unregister() {
-    this.pinnedMenu.removeItem(toggleMetadataItemId);
+    this.pinnedMenu.removeItem(ToggleMetadataButton.toggleMetadataItemId);
   }
 
-  private createToggleMetadataButton() {
+
+}
+
+class ToggleMetadataButton {
+
+  static toggleMetadataItemId = 'toggle-metadata';
+
+  constructor(private pinnedMenu: PinnedMenu) {}
+
+  filesWithFrontmatterHidden = new Set<string>();
+
+  createToggleMetadataButton() {
     const button = document.createElement('button');
 
     button.type = 'button';
@@ -35,7 +46,7 @@ export class PinnedStoryButtons {
     return button;
   }
 
-  private updateToggleMetadataButton(element: HTMLElement, target: PinnedMenuTarget) {
+  updateToggleMetadataButton(element: HTMLElement, target: PinnedMenuTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
@@ -51,7 +62,7 @@ export class PinnedStoryButtons {
     this.setFrontmatterCSS(target.el, isHidden);
   }
 
-  private toggleFrontmatterVisibility(filePath: string) {
+  toggleFrontmatterVisibility(filePath: string) {
     if (this.filesWithFrontmatterHidden.has(filePath)) {
       this.filesWithFrontmatterHidden.delete(filePath);
     } else {
@@ -61,7 +72,7 @@ export class PinnedStoryButtons {
     this.pinnedMenu.refresh();
   }
 
-  private setFrontmatterCSS(markdownViewEl: HTMLElement, isHidden: boolean) {
+   setFrontmatterCSS(markdownViewEl: HTMLElement, isHidden: boolean) {
     markdownViewEl.classList.toggle('gh-frontmatter-hidden', isHidden);
   }
 }
