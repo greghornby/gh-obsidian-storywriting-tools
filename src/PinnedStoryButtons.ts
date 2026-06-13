@@ -1,50 +1,73 @@
 import {
-  PinnedMenu,
-  PinnedMenuTarget,
-} from './PinnedMenu';
+  StoryHUD,
+  StoryHUDTarget,
+} from './StoryHUD';
+import { PageController } from './PageController';
+import { State } from './State';
 
 export class PinnedStoryButtons {
   private toggleMetadataButton: ToggleMetadataButton;
-  private sceneBreakButton = new SceneBreakButton();
-  private emDashButton = new EmDashButton();
+  private sceneBreakButton: SceneBreakButton;
+  private emDashButton: EmDashButton;
+  private sampleToolbarButton = new SampleToolbarButton();
 
-  constructor(private pinnedMenu: PinnedMenu) {
-    this.toggleMetadataButton = new ToggleMetadataButton(this.pinnedMenu);
+  constructor(
+    private storyHUD: StoryHUD,
+    private state: State,
+    private pageController: PageController,
+  ) {
+    this.toggleMetadataButton = new ToggleMetadataButton(
+      this.storyHUD,
+      this.state,
+      this.pageController,
+    );
+    this.sceneBreakButton = new SceneBreakButton(this.pageController);
+    this.emDashButton = new EmDashButton(this.pageController);
   }
 
   register() {
-    this.pinnedMenu.addItem({
+    this.storyHUD.addItem({
       id: ToggleMetadataButton.toggleMetadataItemId,
+      menu: 'pinned',
       create: () => this.toggleMetadataButton.createToggleMetadataButton(),
       update: (element, target) => {
         this.toggleMetadataButton.updateToggleMetadataButton(element, target);
       },
-      remove: (_element, target) => {
-        this.toggleMetadataButton.setFrontmatterCSS(target.el, false);
-      },
     });
 
-    this.pinnedMenu.addItem({
+    this.storyHUD.addItem({
       id: SceneBreakButton.sceneBreakItemId,
+      menu: 'pinned',
       create: () => this.sceneBreakButton.createSceneBreakButton(),
       update: (element, target) => {
         this.sceneBreakButton.updateSceneBreakButton(element, target);
       },
     });
 
-    this.pinnedMenu.addItem({
+    this.storyHUD.addItem({
       id: EmDashButton.emDashItemId,
+      menu: 'pinned',
       create: () => this.emDashButton.createEmDashButton(),
       update: (element, target) => {
         this.emDashButton.updateEmDashButton(element, target);
       },
     });
+
+    // this.storyHUD.addItem({
+    //   id: SampleToolbarButton.sampleToolbarItemId,
+    //   menu: 'toolbar',
+    //   create: () => this.sampleToolbarButton.createSampleToolbarButton(),
+    //   update: (element, target) => {
+    //     this.sampleToolbarButton.updateSampleToolbarButton(element, target);
+    //   },
+    // });
   }
 
   unregister() {
-    this.pinnedMenu.removeItem(ToggleMetadataButton.toggleMetadataItemId);
-    this.pinnedMenu.removeItem(SceneBreakButton.sceneBreakItemId);
-    this.pinnedMenu.removeItem(EmDashButton.emDashItemId);
+    this.storyHUD.removeItem(ToggleMetadataButton.toggleMetadataItemId);
+    this.storyHUD.removeItem(SceneBreakButton.sceneBreakItemId);
+    this.storyHUD.removeItem(EmDashButton.emDashItemId);
+    // this.storyHUD.removeItem(SampleToolbarButton.sampleToolbarItemId);
   }
 
 
@@ -54,9 +77,11 @@ class ToggleMetadataButton {
 
   static toggleMetadataItemId = 'toggle-metadata';
 
-  constructor(private pinnedMenu: PinnedMenu) {}
-
-  filesWithFrontmatterHidden = new Set<string>();
+  constructor(
+    private storyHUD: StoryHUD,
+    private state: State,
+    private pageController: PageController,
+  ) {}
 
   createToggleMetadataButton() {
     const button = document.createElement('button');
@@ -65,39 +90,32 @@ class ToggleMetadataButton {
     return button;
   }
 
-  updateToggleMetadataButton(element: HTMLElement, target: PinnedMenuTarget) {
+  updateToggleMetadataButton(element: HTMLElement, target: StoryHUDTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
 
-    const isHidden = this.filesWithFrontmatterHidden.has(target.filePath);
+    const isVisible = this.state.isMetadataVisible(target.filePath);
 
-    element.textContent = isHidden ? 'Show Metadata' : 'Hide Metadata';
-    element.setAttribute('aria-pressed', String(isHidden));
+    element.textContent = isVisible ? 'Hide Metadata' : 'Show Metadata';
+    element.setAttribute('aria-pressed', String(isVisible));
     element.onclick = () => {
       this.toggleFrontmatterVisibility(target.filePath);
     };
-
-    this.setFrontmatterCSS(target.el, isHidden);
   }
 
   toggleFrontmatterVisibility(filePath: string) {
-    if (this.filesWithFrontmatterHidden.has(filePath)) {
-      this.filesWithFrontmatterHidden.delete(filePath);
-    } else {
-      this.filesWithFrontmatterHidden.add(filePath);
-    }
+    this.state.toggleMetadataHidden(filePath);
 
-    this.pinnedMenu.refresh();
-  }
-
-   setFrontmatterCSS(markdownViewEl: HTMLElement, isHidden: boolean) {
-    markdownViewEl.classList.toggle('gh-frontmatter-hidden', isHidden);
+    this.storyHUD.refresh();
+    this.pageController.render();
   }
 }
 
 class SceneBreakButton {
   static sceneBreakItemId = 'scene-break';
+
+  constructor(private pageController: PageController) {}
 
   createSceneBreakButton() {
     const button = document.createElement('button');
@@ -107,34 +125,21 @@ class SceneBreakButton {
     return button;
   }
 
-  updateSceneBreakButton(element: HTMLElement, target: PinnedMenuTarget) {
+  updateSceneBreakButton(element: HTMLElement, target: StoryHUDTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
 
     element.onclick = () => {
-      this.insertSceneBreak(target);
+      this.pageController.addOnNextLine('---', true);
     };
-  }
-
-  private insertSceneBreak(target: PinnedMenuTarget) {
-    const editor = target.markdownView.editor;
-    const cursor = editor.getCursor();
-    const line = editor.getLine(cursor.line);
-
-    if (line.trim().length === 0) {
-      editor.replaceRange('---\n', {line: cursor.line, ch: 0}, {line: cursor.line, ch: line.length});
-      editor.setCursor({line: cursor.line + 1, ch: 0});
-      return;
-    }
-
-    editor.replaceRange('\n---\n', {line: cursor.line, ch: line.length});
-    editor.setCursor({line: cursor.line + 2, ch: 0});
   }
 }
 
 class EmDashButton {
   static emDashItemId = 'em-dash';
+
+  constructor(private pageController: PageController) {}
 
   createEmDashButton() {
     const button = document.createElement('button');
@@ -144,24 +149,35 @@ class EmDashButton {
     return button;
   }
 
-  updateEmDashButton(element: HTMLElement, target: PinnedMenuTarget) {
+  updateEmDashButton(element: HTMLElement, target: StoryHUDTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
 
     element.onclick = () => {
-      this.insertEmDash(target);
+      this.pageController.addAtCursor('—', true);
     };
   }
+}
 
-  private insertEmDash(target: PinnedMenuTarget) {
-    const editor = target.markdownView.editor;
-    const cursor = editor.getCursor();
+class SampleToolbarButton {
+  static sampleToolbarItemId = 'sample-toolbar';
 
-    editor.replaceRange('—', cursor);
-    editor.setCursor({
-      line: cursor.line,
-      ch: cursor.ch + 1,
-    });
+  createSampleToolbarButton() {
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.textContent = 'Toolbar Sample';
+    return button;
+  }
+
+  updateSampleToolbarButton(element: HTMLElement, target: StoryHUDTarget) {
+    if (!(element instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    element.onclick = () => {
+      console.log('StoryHUD toolbar sample clicked:', target.filePath);
+    };
   }
 }

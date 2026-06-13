@@ -3,12 +3,12 @@ import {
   PluginSettingTab,
   Setting,
 } from 'obsidian';
-import type GHStoryWritingTools from './index';
+import type {StoryWritingToolsPlugin} from './StoryWritingToolsPlugin';
 
-export class GHStoryWritingToolsSettingTab extends PluginSettingTab {
+export class StoryWritingToolsSettingTab extends PluginSettingTab {
   constructor(
     app: App,
-    private plugin: GHStoryWritingTools,
+    private plugin: StoryWritingToolsPlugin,
   ) {
     super(app, plugin);
   }
@@ -32,8 +32,8 @@ export class GHStoryWritingToolsSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName('PinnedMenu Include Glob')
-      .setDesc('Only markdown files whose vault path matches this glob will show pinned menu controls.')
+      .setName('StoryHUD Include Glob')
+      .setDesc('Only markdown files whose vault path matches this glob will show StoryHUD controls.')
       .addText((text) => {
         text
           .setPlaceholder('**/*.md')

@@ -75,18 +75,20 @@ COPY_BUILD_TO_VAULT_ROOT=C:\Path\To\Obsidian\Vault
 - `styles.css` must stay at repo root unless `copyBuildToVault.ts` is updated.
 - For personal plugin changes, prefer small direct edits over broad scaffolding.
 
-## Pinned Menu Architecture
-- `src/PinnedMenu.ts` owns the shared pinned menu surface.
-- `PinnedMenu` is responsible for:
+## StoryHUD Architecture
+- `src/StoryHUD.ts` owns the shared story HUD surface.
+- `StoryHUD` is responsible for:
   - finding markdown leaves
   - finding `.markdown-source-view` and `.markdown-preview-view` containers
-  - applying the pinned menu include glob
-  - creating/removing `.gh-pinned-menu`
-  - rendering registered menu item rows
-  - managing the collapse/expand notch
+  - applying the StoryHUD include glob
+  - creating/removing `.gh-story-hud-toolbar` and `.gh-story-hud-pinned`
+  - rendering registered toolbar and pinned menu item rows
+  - managing the pinned menu collapse/expand notch
 - Feature classes should not rediscover markdown leaves or append directly to markdown containers.
-- Feature classes should register menu items with `PinnedMenu.addItem(...)`.
-- `PinnedMenuTarget` gives menu items the active context:
+- Feature classes should register menu items with `StoryHUD.addItem(...)`.
+- Use `menu: 'toolbar'` for top horizontal toolbar items.
+- Use `menu: 'pinned'` for left pinned menu items.
+- `StoryHUDTarget` gives menu items the active context:
   - `el`: source or preview container element
   - `filePath`: vault path for the current markdown file
   - `leaf`: markdown workspace leaf
@@ -94,27 +96,36 @@ COPY_BUILD_TO_VAULT_ROOT=C:\Path\To\Obsidian\Vault
 
 ## Pinned Story Buttons
 - `src/PinnedStoryButtons.ts` is the feature class for story-writing pinned controls.
-- `PinnedStoryButtons` registers all story buttons with `PinnedMenu`.
+- `PinnedStoryButtons` registers all story buttons with `StoryHUD`.
 - Each button should be implemented as a small class in `PinnedStoryButtons.ts` unless it grows large enough to justify its own file.
 - A button class should expose:
   - a static item id
   - a `create...Button()` method that creates and styles the button element
-  - an `update...Button(element, target)` method that updates label/state and click behavior for the current `PinnedMenuTarget`
-- Button click handlers that edit markdown should use `target.markdownView.editor`.
-- After a button changes state that affects pinned menu rendering, call `pinnedMenu.refresh()`.
+  - an `update...Button(element, target)` method that updates label/state and click behavior for the current `StoryHUDTarget`
+- Button click handlers that edit markdown should prefer `PageController` helpers over direct editor mutation.
+- After a button changes state that affects HUD labels or rows, call `storyHUD.refresh()`.
+- After a button changes state that affects page rendering, call `pageController.render()`.
 - Add a dedicated CSS class for each new button, then include it in the shared pinned button styling in `styles.css`.
 
 Example item registration:
 
 ```ts
-this.pinnedMenu.addItem({
+this.storyHUD.addItem({
   id: ExampleButton.exampleItemId,
+  menu: 'pinned',
   create: () => this.exampleButton.createExampleButton(),
   update: (element, target) => {
     this.exampleButton.updateExampleButton(element, target);
   },
 });
 ```
+
+## Page Controller
+- `src/PageController.ts` owns page-level effects and editor actions.
+- Use `PageController.render()` for state-driven page rendering, such as applying hidden metadata CSS from local state.
+- Use `PageController.addAtCursor(text, moveCursorAfterInsertion)` for inline insertions.
+- Use `PageController.addOnNextLine(text, moveCursorAfterInsertion)` for block insertions that should land on the current empty line or after the current non-empty line.
+- Do not put page DOM effects directly in button classes; button classes should update state and ask `PageController` to render.
 
 ## Coding Preferences
 - TypeScript and JavaScript: 2-space indentation.

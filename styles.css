@@ -1,54 +1,76 @@
-.gh-pinned-menu-host {
+.gh-story-hud-host {
+  --gh-story-hud-toolbar-height: 40px;
   position: relative;
 }
 
-.gh-pinned-menu {
+.gh-story-hud-toolbar {
   position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--gh-story-hud-toolbar-height);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 6px;
+  gap: 6px;
+  background-color: var(--file-header-background-focused);
+}
+
+.gh-story-hud-toolbar-items {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+}
+
+.gh-story-hud-pinned {
+  height: 100%;
+  position: absolute;
+  top: var(--gh-story-hud-toolbar-height);
+  left: 0;
   z-index: 10;
   display: flex;
   flex-direction: row;
   gap: 0;
   align-items: flex-start;
+  background-color: var(--file-header-background-focused);
 }
 
-.gh-pinned-menu-rows {
+.gh-story-hud-pinned-items {
   display: inline-grid;
   grid-auto-rows: min-content;
   gap: 4px;
   align-items: stretch;
   padding: 6px;
-  border-right: 1px solid rgba(255, 255, 255, 0.55);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 0 0 6px 0;
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(10px) saturate(1.2);
 }
 
-.gh-pinned-menu.is-collapsed .gh-pinned-menu-rows {
+.gh-story-hud-pinned.is-collapsed .gh-story-hud-pinned-items {
   display: none;
 }
 
-.gh-pinned-menu-row {
+.gh-story-hud-row {
   display: flex;
+}
+
+.gh-story-hud-pinned .gh-story-hud-row {
   min-width: 100%;
 }
 
-.gh-pinned-menu-row > button {
+.gh-story-hud-pinned .gh-story-hud-row > button {
   width: 100%;
   justify-content: center;
   white-space: nowrap;
 }
 
-.gh-pinned-menu-notch {
-  min-width: 24px;
-  border-radius: 0 6px 6px 0;
-  border-left: 0;
+.gh-story-hud-toolbar .gh-story-hud-row > button {
+  white-space: nowrap;
 }
 
-.gh-pinned-menu.is-collapsed .gh-pinned-menu-notch {
-  border-left: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+.gh-story-hud-pinned-notch {
+  min-width: 28px;
+  align-self: stretch;
 }
 
 .gh-frontmatter-hidden .metadata-container {
