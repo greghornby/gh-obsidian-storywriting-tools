@@ -1,6 +1,6 @@
 import type { PageController } from './PageController';
 import { PageTarget } from './PageTarget';
-import { PageUIPinnedButtons } from './PinnedStoryButtons';
+import { PageUIPinnedButtons } from './PageUIPinnedButtons';
 
 export type PageUIToolbarMenu = 'pinned' | 'toolbar';
 export type PageUIToolbarTarget = PageTarget;
