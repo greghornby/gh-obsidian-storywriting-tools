@@ -13,7 +13,7 @@ import {
   GHStoryWritingToolsSettings,
 } from './settings';
 import { State } from './State';
-import { PageLinter } from './StoryLinter';
+import { PageLinter } from './PageLinter';
 import { StoryWritingToolsSettingTab } from './StoryWritingToolsSettingTab';
 
 type GlobMatcher = ReturnType<typeof picomatch>;
