@@ -1,6 +1,6 @@
-import { MarkdownView } from 'obsidian';
+import { PageTarget } from './PageTarget';
+import { PageUIToolbar } from './PageUIToolbar';
 import { State } from './State';
-import { StoryHUD } from './StoryHUD';
 
 type EditorPosition = {
   line: number;
@@ -8,58 +8,73 @@ type EditorPosition = {
 };
 
 export class PageController {
+  readonly toolbar: PageUIToolbar;
+
   constructor(
+    private target: PageTarget,
     private state: State,
-    private storyHUD: StoryHUD,
-  ) {}
+    private renderControllersForFile: (filePath: string) => void,
+  ) {
+    this.toolbar = new PageUIToolbar(this, this.target);
+  }
+
+  get mode() {
+    return this.target.mode;
+  }
+
+  get filePath() {
+    return this.target.filePath;
+  }
+
+  get containerEl() {
+    return this.target.containerEl;
+  }
+
+  get el() {
+    return this.target.el;
+  }
+
+  get leaf() {
+    return this.target.leaf;
+  }
+
+  get markdownView() {
+    return this.target.markdownView;
+  }
+
+  setTarget(target: PageTarget) {
+    this.target = target;
+    this.toolbar.setTarget(target);
+  }
 
   register() {
-    this.storyHUD.plugin.app.workspace.onLayoutReady(() => {
-      this.render();
-    });
-
-    this.storyHUD.plugin.registerEvent(
-      this.storyHUD.plugin.app.workspace.on('active-leaf-change', () => {
-        this.render();
-      }),
-    );
-
-    this.storyHUD.plugin.registerEvent(
-      this.storyHUD.plugin.app.workspace.on('layout-change', () => {
-        this.render();
-      }),
-    );
+    this.target.containerEl.classList.add("storytools");
+    this.target.el.classList.add(`storytools-mode-${this.target.mode}`);
+    this.toolbar.register();
+    this.render();
   }
 
   unregister() {
-    document
-      .querySelectorAll('.gh-frontmatter-hidden')
-      .forEach((el) => el.classList.remove('gh-frontmatter-hidden'));
+    this.toolbar.unregister();
+    this.target.el.classList.remove('gh-frontmatter-hidden');
   }
 
   render() {
+    this.toolbar.render();
     this.setMetadataVisibility();
   }
 
-  setMetadataVisibility() {
-    document
-      .querySelectorAll('.gh-frontmatter-hidden')
-      .forEach((el) => el.classList.remove('gh-frontmatter-hidden'));
+  toggleMetadataVisibility() {
+    this.state.toggleMetadataHidden(this.filePath);
+    this.renderControllersForFile(this.filePath);
+  }
 
-    for (const target of this.storyHUD.getTargets()) {
-      target.el.classList.toggle(
-        'gh-frontmatter-hidden',
-        !this.state.isMetadataVisible(target.filePath),
-      );
-    }
+  isMetadataVisible() {
+    return this.state.isMetadataVisible(this.filePath);
   }
 
   addAtCursor(text: string, moveCursorAfterInsertion: boolean) {
-    const editor = this.getActiveMarkdownView()?.editor;
-    if (!editor) {
-      return;
-    }
-
+    const editor = this.target.markdownView.editor;
     const cursor = editor.getCursor();
 
     editor.replaceRange(text, cursor);
@@ -70,11 +85,7 @@ export class PageController {
   }
 
   addOnNextLine(text: string, moveCursorAfterInsertion: boolean) {
-    const editor = this.getActiveMarkdownView()?.editor;
-    if (!editor) {
-      return;
-    }
-
+    const editor = this.target.markdownView.editor;
     const cursor = editor.getCursor();
     const line = editor.getLine(cursor.line);
 
@@ -101,8 +112,11 @@ export class PageController {
     }
   }
 
-  private getActiveMarkdownView() {
-    return this.storyHUD.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+  private setMetadataVisibility() {
+    this.target.el.classList.toggle(
+      'gh-frontmatter-hidden',
+      !this.state.isMetadataVisible(this.filePath),
+    );
   }
 
   private getInsertionEnd(start: EditorPosition, text: string): EditorPosition {

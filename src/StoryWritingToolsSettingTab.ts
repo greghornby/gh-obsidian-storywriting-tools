@@ -19,27 +19,26 @@ export class StoryWritingToolsSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName('StoryLinter Include Glob')
-      .setDesc('Only markdown files whose vault path matches this glob will be normalized.')
+      .setName('Story Tools Glob')
+      .setDesc('Only markdown files whose vault path matches this glob will use story tools.')
       .addText((text) => {
         text
           .setPlaceholder('**/*.md')
-          .setValue(this.plugin.settings.storyLinterIncludeGlob)
+          .setValue(this.plugin.settings.storyToolsGlob)
           .onChange(async (value) => {
-            this.plugin.settings.storyLinterIncludeGlob = value.trim() || '**/*.md';
+            this.plugin.settings.storyToolsGlob = value.trim() || '**/*.md';
             await this.plugin.saveSettings();
           });
       });
 
     new Setting(containerEl)
-      .setName('StoryHUD Include Glob')
-      .setDesc('Only markdown files whose vault path matches this glob will show StoryHUD controls.')
-      .addText((text) => {
-        text
-          .setPlaceholder('**/*.md')
-          .setValue(this.plugin.settings.pinnedMenuIncludeGlob)
+      .setName('Enable Story Linter')
+      .setDesc('Normalize matching markdown files when they are modified.')
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.enableStoryLinter)
           .onChange(async (value) => {
-            this.plugin.settings.pinnedMenuIncludeGlob = value.trim() || '**/*.md';
+            this.plugin.settings.enableStoryLinter = value;
             await this.plugin.saveSettings();
           });
       });

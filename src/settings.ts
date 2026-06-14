@@ -1,13 +1,13 @@
 export interface GHStoryWritingToolsSettings {
-  storyLinterIncludeGlob: string;
-  pinnedMenuIncludeGlob: string;
+  storyToolsGlob: string;
+  enableStoryLinter: boolean;
   enforceBlankLinesBetweenParagraphs: boolean;
   collapseExcessBlankLinesToOne: boolean;
 }
 
 export const DEFAULT_SETTINGS: GHStoryWritingToolsSettings = {
-  storyLinterIncludeGlob: '**/*.md',
-  pinnedMenuIncludeGlob: '**/*.md',
+  storyToolsGlob: '**/*.md',
+  enableStoryLinter: false,
   enforceBlankLinesBetweenParagraphs: false,
   collapseExcessBlankLinesToOne: false,
 };

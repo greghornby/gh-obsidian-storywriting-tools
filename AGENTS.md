@@ -75,44 +75,52 @@ COPY_BUILD_TO_VAULT_ROOT=C:\Path\To\Obsidian\Vault
 - `styles.css` must stay at repo root unless `copyBuildToVault.ts` is updated.
 - For personal plugin changes, prefer small direct edits over broad scaffolding.
 
-## StoryHUD Architecture
-- `src/StoryHUD.ts` owns the shared story HUD surface.
-- `StoryHUD` is responsible for:
+## Page Architecture
+- `src/StoryWritingToolsPlugin.ts` owns story tools activation.
+- The plugin is responsible for:
+  - compiling `settings.storyToolsGlob`
   - finding markdown leaves
   - finding `.markdown-source-view` and `.markdown-preview-view` containers
-  - applying the StoryHUD include glob
-  - creating/removing `.gh-story-hud-toolbar` and `.gh-story-hud-pinned`
-  - rendering registered toolbar and pinned menu item rows
-  - managing the pinned menu collapse/expand notch
-- Feature classes should not rediscover markdown leaves or append directly to markdown containers.
-- Feature classes should register menu items with `StoryHUD.addItem(...)`.
-- Use `menu: 'toolbar'` for top horizontal toolbar items.
-- Use `menu: 'pinned'` for left pinned menu items.
-- `StoryHUDTarget` gives menu items the active context:
+  - creating one `PageController` per matching visible container
+  - removing controllers whose container disappeared or no longer matches
+  - deciding whether `PageLinter` should run for a modified file
+- `src/PageController.ts` owns one visible markdown container.
+- `PageController` owns page-level rendering, editor actions, and one `PageUIToolbar`.
+- Local state can remain keyed by file path; call `renderControllersForFile(filePath)` when one file's state should update every open pane for that file.
+- `PageTarget` gives page UI and buttons the active context:
   - `el`: source or preview container element
   - `filePath`: vault path for the current markdown file
   - `leaf`: markdown workspace leaf
   - `markdownView`: Obsidian `MarkdownView`
 
+## Page UI Toolbar
+- `src/PageUIToolbar.ts` owns toolbar and pinned menu DOM for one page container.
+- `PageUIToolbar` does not discover leaves or apply globs.
+- Feature classes should register menu items with `PageUIToolbar.addItem(...)`.
+- Use `menu: 'toolbar'` for top horizontal toolbar items.
+- Use `menu: 'pinned'` for left pinned menu items.
+- `PageUIToolbar` creates/removes `.gh-story-hud-toolbar` and `.gh-story-hud-pinned`.
+- `PageUIToolbar` manages the pinned menu collapse/expand notch.
+
 ## Pinned Story Buttons
-- `src/PinnedStoryButtons.ts` is the feature class for story-writing pinned controls.
-- `PinnedStoryButtons` registers all story buttons with `StoryHUD`.
-- Each button should be implemented as a small class in `PinnedStoryButtons.ts` unless it grows large enough to justify its own file.
+- `src/PageUIPinnedButtons.ts` is the feature class for story-writing pinned controls.
+- `PageUIPinnedButtons` registers all story buttons with a page's `PageUIToolbar`.
+- Each button should be implemented as a small class in `PageUIPinnedButtons.ts` unless it grows large enough to justify its own file.
 - A button class should expose:
   - a static item id
   - a `create...Button()` method that creates and styles the button element
-  - an `update...Button(element, target)` method that updates label/state and click behavior for the current `StoryHUDTarget`
+  - an `update...Button(element, target)` method that updates label/state and click behavior for the current `PageUIToolbarTarget`
 - Button click handlers that edit markdown should prefer `PageController` helpers over direct editor mutation.
-- After a button changes state that affects HUD labels or rows, call `storyHUD.refresh()`.
-- After a button changes state that affects page rendering, call `pageController.render()`.
+- After a button changes state that affects page rendering, ask the owning `PageController` to render, or ask the plugin to render every controller for that file.
 - Add a dedicated CSS class for each new button, then include it in the shared pinned button styling in `styles.css`.
 
 Example item registration:
 
 ```ts
-this.storyHUD.addItem({
+this.pageUIToolbar.addItem({
   id: ExampleButton.exampleItemId,
   menu: 'pinned',
+  mode: 'any',
   create: () => this.exampleButton.createExampleButton(),
   update: (element, target) => {
     this.exampleButton.updateExampleButton(element, target);
@@ -121,7 +129,7 @@ this.storyHUD.addItem({
 ```
 
 ## Page Controller
-- `src/PageController.ts` owns page-level effects and editor actions.
+- `src/PageController.ts` is per pane/container.
 - Use `PageController.render()` for state-driven page rendering, such as applying hidden metadata CSS from local state.
 - Use `PageController.addAtCursor(text, moveCursorAfterInsertion)` for inline insertions.
 - Use `PageController.addOnNextLine(text, moveCursorAfterInsertion)` for block insertions that should land on the current empty line or after the current non-empty line.

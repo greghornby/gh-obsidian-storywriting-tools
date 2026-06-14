@@ -1,32 +1,25 @@
+import type { PageController } from './PageController';
 import {
-  StoryHUD,
-  StoryHUDTarget,
-} from './StoryHUD';
-import { PageController } from './PageController';
-import { State } from './State';
+  PageUIToolbar,
+  PageUIToolbarTarget,
+} from './PageUIToolbar';
 
-export class PinnedStoryButtons {
+export class PageUIPinnedButtons {
   private toggleMetadataButton: ToggleMetadataButton;
   private sceneBreakButton: SceneBreakButton;
   private emDashButton: EmDashButton;
-  private sampleToolbarButton = new SampleToolbarButton();
 
   constructor(
-    private storyHUD: StoryHUD,
-    private state: State,
+    private pageUIToolbar: PageUIToolbar,
     private pageController: PageController,
   ) {
-    this.toggleMetadataButton = new ToggleMetadataButton(
-      this.storyHUD,
-      this.state,
-      this.pageController,
-    );
+    this.toggleMetadataButton = new ToggleMetadataButton(this.pageController);
     this.sceneBreakButton = new SceneBreakButton(this.pageController);
     this.emDashButton = new EmDashButton(this.pageController);
   }
 
   register() {
-    this.storyHUD.addItem({
+    this.pageUIToolbar.addItem({
       id: ToggleMetadataButton.toggleMetadataItemId,
       menu: 'pinned',
       create: () => this.toggleMetadataButton.createToggleMetadataButton(),
@@ -35,7 +28,7 @@ export class PinnedStoryButtons {
       },
     });
 
-    this.storyHUD.addItem({
+    this.pageUIToolbar.addItem({
       id: SceneBreakButton.sceneBreakItemId,
       menu: 'pinned',
       create: () => this.sceneBreakButton.createSceneBreakButton(),
@@ -44,7 +37,7 @@ export class PinnedStoryButtons {
       },
     });
 
-    this.storyHUD.addItem({
+    this.pageUIToolbar.addItem({
       id: EmDashButton.emDashItemId,
       menu: 'pinned',
       create: () => this.emDashButton.createEmDashButton(),
@@ -52,36 +45,19 @@ export class PinnedStoryButtons {
         this.emDashButton.updateEmDashButton(element, target);
       },
     });
-
-    // this.storyHUD.addItem({
-    //   id: SampleToolbarButton.sampleToolbarItemId,
-    //   menu: 'toolbar',
-    //   create: () => this.sampleToolbarButton.createSampleToolbarButton(),
-    //   update: (element, target) => {
-    //     this.sampleToolbarButton.updateSampleToolbarButton(element, target);
-    //   },
-    // });
   }
 
   unregister() {
-    this.storyHUD.removeItem(ToggleMetadataButton.toggleMetadataItemId);
-    this.storyHUD.removeItem(SceneBreakButton.sceneBreakItemId);
-    this.storyHUD.removeItem(EmDashButton.emDashItemId);
-    // this.storyHUD.removeItem(SampleToolbarButton.sampleToolbarItemId);
+    this.pageUIToolbar.removeItem(ToggleMetadataButton.toggleMetadataItemId);
+    this.pageUIToolbar.removeItem(SceneBreakButton.sceneBreakItemId);
+    this.pageUIToolbar.removeItem(EmDashButton.emDashItemId);
   }
-
-
 }
 
 class ToggleMetadataButton {
-
   static toggleMetadataItemId = 'toggle-metadata';
 
-  constructor(
-    private storyHUD: StoryHUD,
-    private state: State,
-    private pageController: PageController,
-  ) {}
+  constructor(private pageController: PageController) {}
 
   createToggleMetadataButton() {
     const button = document.createElement('button');
@@ -90,25 +66,18 @@ class ToggleMetadataButton {
     return button;
   }
 
-  updateToggleMetadataButton(element: HTMLElement, target: StoryHUDTarget) {
+  updateToggleMetadataButton(element: HTMLElement, _target: PageUIToolbarTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
 
-    const isVisible = this.state.isMetadataVisible(target.filePath);
+    const isVisible = this.pageController.isMetadataVisible();
 
     element.textContent = isVisible ? 'Hide Metadata' : 'Show Metadata';
     element.setAttribute('aria-pressed', String(isVisible));
     element.onclick = () => {
-      this.toggleFrontmatterVisibility(target.filePath);
+      this.pageController.toggleMetadataVisibility();
     };
-  }
-
-  toggleFrontmatterVisibility(filePath: string) {
-    this.state.toggleMetadataHidden(filePath);
-
-    this.storyHUD.refresh();
-    this.pageController.render();
   }
 }
 
@@ -125,7 +94,7 @@ class SceneBreakButton {
     return button;
   }
 
-  updateSceneBreakButton(element: HTMLElement, target: StoryHUDTarget) {
+  updateSceneBreakButton(element: HTMLElement, _target: PageUIToolbarTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
@@ -149,35 +118,13 @@ class EmDashButton {
     return button;
   }
 
-  updateEmDashButton(element: HTMLElement, target: StoryHUDTarget) {
+  updateEmDashButton(element: HTMLElement, _target: PageUIToolbarTarget) {
     if (!(element instanceof HTMLButtonElement)) {
       return;
     }
 
     element.onclick = () => {
       this.pageController.addAtCursor('—', true);
-    };
-  }
-}
-
-class SampleToolbarButton {
-  static sampleToolbarItemId = 'sample-toolbar';
-
-  createSampleToolbarButton() {
-    const button = document.createElement('button');
-
-    button.type = 'button';
-    button.textContent = 'Toolbar Sample';
-    return button;
-  }
-
-  updateSampleToolbarButton(element: HTMLElement, target: StoryHUDTarget) {
-    if (!(element instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    element.onclick = () => {
-      console.log('StoryHUD toolbar sample clicked:', target.filePath);
     };
   }
 }

@@ -3,33 +3,17 @@ import {
   TAbstractFile,
   TFile,
 } from 'obsidian';
-import picomatch from 'picomatch';
 import type { GHStoryWritingToolsSettings } from './settings';
 import { ContentParser } from './util/ContentParser';
 
-type GlobMatcher = ReturnType<typeof picomatch>;
-
-export class StoryLinter {
+export class PageLinter {
   private ignoredNextModify = new Set<string>();
-  private includeGlob = '';
-  private includeMatcher: GlobMatcher | null = null;
 
   constructor(
     private plugin: Plugin,
     private settings: GHStoryWritingToolsSettings,
-  ) {
-    this.setIncludeGlob(settings.storyLinterIncludeGlob);
-  }
-
-  setIncludeGlob(includeGlob: string) {
-    this.includeGlob = includeGlob;
-    try {
-      this.includeMatcher = picomatch(includeGlob);
-    } catch (error) {
-      console.error('Invalid StoryLinter include glob:', includeGlob, error);
-      this.includeMatcher = null;
-    }
-  }
+    private shouldLintFile: (file: TFile) => boolean,
+  ) {}
 
   register() {
     this.plugin.registerEvent(
@@ -41,14 +25,6 @@ export class StoryLinter {
 
   unregister() {
     this.ignoredNextModify.clear();
-  }
-
-  private shouldLintFile(file: TFile) {
-    if (!this.includeMatcher) {
-      return false;
-    }
-
-    return this.includeMatcher(file.path);
   }
 
   private async lintFile(file: TAbstractFile) {
