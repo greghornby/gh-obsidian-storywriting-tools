@@ -23,4 +23,22 @@ export class ContentParser {
   static createContentFromBodyAndFrontmatter({body, frontmatter}: {body: string; frontmatter: string}): string {
     return `${frontmatter}${body}`;
   }
+
+  static WORD_COUNT_REGEX = /[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+  static wordCount(content: string, removeMarkdown = true, removeComments = true) {
+    let normalizedContent = content;
+    if (removeMarkdown) {
+        normalizedContent = normalizedContent
+            .replace(/`\$?=[^`]+`/g, "") // inline dataview
+            .replace(/^---\n.*?\n---\n/s, "") // YAML Header
+            .replace(/!?\[(.+)\]\(.+\)/g, "$1") // URLs & Image Captions
+            .replace(/\*|_|\[\[|\]\]|\||==|~~|---|#|> |`/g, ""); // Markdown Syntax
+    }
+    if (removeComments) {
+        normalizedContent = normalizedContent
+            .replace(/<!--.*?-->/gs, "") // HTML comments
+            .replace(/%%.*?%%/gs, ""); // Markdown comments
+    }
+    return (normalizedContent.match(this.WORD_COUNT_REGEX) || []).length;
+}
 }
