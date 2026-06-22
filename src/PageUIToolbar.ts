@@ -1,6 +1,7 @@
 import type { PageController } from './PageController';
 import { PageTarget } from './PageTarget';
 import { PageUIPinnedButtons } from './PageUIPinnedButtons';
+import { StoryWritingToolsPlugin } from './StoryWritingToolsPlugin';
 
 export type PageUIToolbarMenu = 'pinned' | 'toolbar';
 export type PageUIToolbarTarget = PageTarget;
@@ -20,17 +21,14 @@ export class PageUIToolbar {
   private pinnedStoryButtons: PageUIPinnedButtons;
 
   constructor(
-    private pageController: PageController,
-    private target: PageTarget,
+    public plugin: StoryWritingToolsPlugin,
+    public controller: PageController,
   ) {
     this.pinnedStoryButtons = new PageUIPinnedButtons(
+      this.plugin,
+      controller,
       this,
-      pageController,
     );
-  }
-
-  setTarget(target: PageTarget) {
-    this.target = target;
   }
 
   register() {
@@ -44,9 +42,13 @@ export class PageUIToolbar {
     this.items.clear();
   }
 
+  get target() {
+    return this.controller.target;
+  }
+
   addItem(item: PageUIToolbarItem) {
     const forMode = item.mode ?? "any";
-    if (forMode !== "any" && forMode !== this.pageController.mode) {
+    if (forMode !== "any" && forMode !== this.controller.mode) {
       return;
     }
     this.items.set(item.id, item);
@@ -187,7 +189,7 @@ export class PageUIToolbar {
 
   private togglePinnedCollapsed() {
     this.isPinnedCollapsed = !this.isPinnedCollapsed;
-    this.pageController.render();
+    this.controller.render();
   }
 
   private syncPinnedNotch() {

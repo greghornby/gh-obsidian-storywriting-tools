@@ -1,39 +1,44 @@
-import {
-  Plugin,
-  TAbstractFile,
-  TFile,
-} from 'obsidian';
-import type { GHStoryWritingToolsSettings } from './settings';
+import { EventRef, TAbstractFile, TFile } from 'obsidian';
+import { PageController } from './PageController';
+import { StoryWritingToolsPlugin } from './StoryWritingToolsPlugin';
 import { ContentParser } from './util/ContentParser';
 
 export class PageLinter {
-  private ignoredNextModify = new Set<string>();
+  public static filepathLintQueue = new Set<string>();
+  private modifyEventRef?: EventRef;
 
   constructor(
-    private plugin: Plugin,
-    private settings: GHStoryWritingToolsSettings,
-    private shouldLintFile: (file: TFile) => boolean,
+    public plugin: StoryWritingToolsPlugin,
+    public controller: PageController
   ) {}
 
   register() {
-    this.plugin.registerEvent(
-      this.plugin.app.vault.on('modify', (file) => {
-        this.lintFile(file);
-      }),
-    );
+    this.modifyEventRef = this.plugin.app.vault.on('modify', (file) => {
+      if (this.controller.target.mode !== "edit") {
+        return;
+      }
+      PageLinterQueue.addFileToQueue(file, () => this.lintFile(file));
+    });
   }
 
   unregister() {
-    this.ignoredNextModify.clear();
+    if (this.modifyEventRef) {
+      this.plugin.app.vault.offref(this.modifyEventRef);
+    }
+  }
+
+  get tools() {
+    return this.controller.tools;
   }
 
   private async lintFile(file: TAbstractFile) {
-    if (!(file instanceof TFile)) {
+    if (!this.plugin.settings.enableStoryLinter) {
       return;
     }
-
-    if (this.ignoredNextModify.has(file.path)) {
-      this.ignoredNextModify.delete(file.path);
+    if (file.path !== this.controller.filePath) {
+      return;
+    }
+    if (!(file instanceof TFile)) {
       return;
     }
 
@@ -41,9 +46,7 @@ export class PageLinter {
       return;
     }
 
-    if (!this.shouldLintFile(file)) {
-      return;
-    }
+    console.log("Linting file", this.controller.filePath);
 
     const content = await this.plugin.app.vault.read(file);
     const {changed, normalizedFile} = this.normalizeFile(content);
@@ -52,7 +55,6 @@ export class PageLinter {
       return;
     }
 
-    this.ignoredNextModify.add(file.path);
     await this.plugin.app.vault.modify(file, normalizedFile);
   }
 
@@ -68,7 +70,7 @@ export class PageLinter {
     let normalizedBody = body;
     let changed = false;
 
-    if (this.settings.enforceBlankLinesBetweenParagraphs) {
+    if (this.plugin.settings.enforceBlankLinesBetweenParagraphs) {
       const singleNewLineReg = /([^\n])(\n)([^\n])/g;
       if (singleNewLineReg.test(normalizedBody)) {
         normalizedBody = normalizedBody.replace(singleNewLineReg, '$1\n\n$3');
@@ -76,7 +78,7 @@ export class PageLinter {
       }
     }
 
-    if (this.settings.collapseExcessBlankLinesToOne) {
+    if (this.plugin.settings.collapseExcessBlankLinesToOne) {
       const moreThanTwoNewLinesReg = /\n{3,}/g;
       if (moreThanTwoNewLinesReg.test(normalizedBody)) {
         normalizedBody = normalizedBody.replace(moreThanTwoNewLinesReg, '\n\n');
@@ -85,5 +87,50 @@ export class PageLinter {
     }
 
     return {changed, normalizedBody};
+  }
+}
+
+class PageLinterQueue {
+  private static LINT_DELAY_MS = 1000;
+  public static filePaths = new Set<string>();
+  public static filePathToLintFn = new Map<string, () => void>;
+  public static ignoreNextModifyFilepaths = new Set<string>();
+  private static lockId: number = 0;
+  private static isLocked: boolean = false;
+
+  public static addFileToQueue(file: TAbstractFile, fn: () => void) {
+    if (this.isLocked) {
+      console.log("addFileToQueue: ignored file because locked");
+      return;
+    }
+    const filepath = file.path;
+    if (this.filePaths.has(filepath)) {
+      console.log("addFileToQueue: ignored file because already queued");
+      return;
+    }
+    this.filePaths.add(filepath);
+    this.filePathToLintFn.set(filepath, fn);
+    this.lockId++;
+    const cachedLockId = this.lockId;
+    console.log("addFileToQueue: added file to queue. lock id:", cachedLockId);
+    setTimeout(() => {
+      console.log("Running setimeout");
+      if (this.lockId !== cachedLockId) {
+        console.log("Not running this timeout because cachedLockId", cachedLockId, "does not match current lockId", this.lockId);
+        return;
+      }
+      console.log("Locking lint queue");
+      this.isLocked = true;
+      try {
+        [...this.filePathToLintFn.values()].forEach(fn => fn());
+      } finally {
+        this.filePaths.clear();
+        this.filePathToLintFn.clear();
+        setTimeout(() => {
+          this.isLocked = false;
+          console.log("Unlocking lint queue");
+        }, 1000);
+      }
+    }, this.LINT_DELAY_MS);
   }
 }

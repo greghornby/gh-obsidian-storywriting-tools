@@ -19,7 +19,7 @@ type StateFile = {
   global: GlobalState;
 };
 
-export class State {
+export class StoryWritingToolsState {
   private localState: LocalState = {...DEFAULT_LOCAL_STATE};
   private globalState: GlobalState = {...DEFAULT_GLOBAL_STATE};
 

@@ -1,43 +1,26 @@
-import {
-  Plugin,
-  TFile,
-} from 'obsidian';
+import { Plugin } from 'obsidian';
 import picomatch from 'picomatch';
 import { PageController } from './PageController';
-import {
-  isPageTargetLeaf,
-  PageTarget,
-} from './PageTarget';
-import {
-  DEFAULT_SETTINGS,
-  GHStoryWritingToolsSettings,
-} from './settings';
-import { State } from './State';
-import { PageLinter } from './PageLinter';
+import { isPageTargetLeaf, PageTarget } from './PageTarget';
+import { DEFAULT_SETTINGS, StoryWritingToolsSettings } from './settings';
+import { StoryWritingToolsState } from './StoryWritingToolsState';
 import { StoryWritingToolsSettingTab } from './StoryWritingToolsSettingTab';
 
 type GlobMatcher = ReturnType<typeof picomatch>;
 
 export class StoryWritingToolsPlugin extends Plugin {
-  settings: GHStoryWritingToolsSettings = {...DEFAULT_SETTINGS};
+  public settings: StoryWritingToolsSettings = {...DEFAULT_SETTINGS};
 
-  private state!: State;
-  private storyLinter: PageLinter | null = null;
+  public state!: StoryWritingToolsState;
   private storyToolsMatcher: GlobMatcher | null = null;
   private pageControllers = new Map<HTMLElement, PageController>();
 
   async onload() {
     await this.loadSettings();
 
-    this.state = new State(this);
+    this.state = new StoryWritingToolsState(this);
     await this.state.load();
     this.compileStoryToolsMatcher();
-
-    this.storyLinter = new PageLinter(
-      this,
-      this.settings,
-      (file) => this.shouldRunStoryLinter(file),
-    );
 
     this.addSettingTab(new StoryWritingToolsSettingTab(this.app, this));
 
@@ -57,11 +40,9 @@ export class StoryWritingToolsPlugin extends Plugin {
       }),
     );
 
-    this.storyLinter.register();
   }
 
   onunload() {
-    this.storyLinter?.unregister();
     this.unregisterPageControllers();
   }
 
@@ -91,8 +72,9 @@ export class StoryWritingToolsPlugin extends Plugin {
     const targets = this.getPageTargets();
     const activeTargets = targets.filter((target) => this.shouldActivateFilePath(target.filePath));
     const activeTargetEls = new Set(activeTargets.map((target) => target.el));
+    const activeContainerEls = new Set(activeTargets.map((target) => target.containerEl));
 
-    this.removeStrayPageUI(activeTargetEls);
+    this.removeStrayPageUI(activeTargetEls, activeContainerEls);
 
     for (const [el, controller] of this.pageControllers) {
       if (!activeTargetEls.has(el)) {
@@ -111,8 +93,8 @@ export class StoryWritingToolsPlugin extends Plugin {
       }
 
       const controller = new PageController(
+        this,
         target,
-        this.state,
         (filePath) => this.renderControllersForFile(filePath),
       );
 
@@ -155,10 +137,6 @@ export class StoryWritingToolsPlugin extends Plugin {
       });
   }
 
-  private shouldRunStoryLinter(file: TFile) {
-    return this.settings.enableStoryLinter && this.shouldActivateFilePath(file.path);
-  }
-
   private shouldActivateFilePath(filePath: string) {
     if (!this.storyToolsMatcher) {
       return false;
@@ -176,7 +154,10 @@ export class StoryWritingToolsPlugin extends Plugin {
     }
   }
 
-  private removeStrayPageUI(activeTargetEls: Set<HTMLElement>) {
+  private removeStrayPageUI(
+    activeTargetEls: Set<HTMLElement>,
+    activeContainerEls: Set<HTMLElement>,
+  ) {
     document
       .querySelectorAll<HTMLElement>('.gh-story-hud-toolbar, .gh-story-hud-pinned')
       .forEach((menu) => {
@@ -184,6 +165,25 @@ export class StoryWritingToolsPlugin extends Plugin {
 
         if (!hostEl || !activeTargetEls.has(hostEl)) {
           menu.remove();
+        }
+      });
+
+    document
+      .querySelectorAll<HTMLElement>('.storytools')
+      .forEach((containerEl) => {
+        if (!activeContainerEls.has(containerEl)) {
+          containerEl.classList.remove('storytools');
+        }
+      });
+
+    document
+      .querySelectorAll<HTMLElement>('.storytools-mode-edit, .storytools-mode-preview')
+      .forEach((el) => {
+        if (!activeTargetEls.has(el)) {
+          el.classList.remove(
+            'storytools-mode-edit',
+            'storytools-mode-preview',
+          );
         }
       });
   }

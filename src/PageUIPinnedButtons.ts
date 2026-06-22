@@ -1,8 +1,9 @@
-import type { PageController } from './PageController';
+import { PageController } from './PageController';
 import {
   PageUIToolbar,
   PageUIToolbarTarget,
 } from './PageUIToolbar';
+import { StoryWritingToolsPlugin } from './StoryWritingToolsPlugin';
 
 export class PageUIPinnedButtons {
   private toggleMetadataButton: ToggleMetadataButton;
@@ -10,16 +11,17 @@ export class PageUIPinnedButtons {
   private emDashButton: EmDashButton;
 
   constructor(
-    private pageUIToolbar: PageUIToolbar,
-    private pageController: PageController,
+    public plugin: StoryWritingToolsPlugin,
+    private controller: PageController,
+    private toolbar: PageUIToolbar,
   ) {
-    this.toggleMetadataButton = new ToggleMetadataButton(this.pageController);
-    this.sceneBreakButton = new SceneBreakButton(this.pageController);
-    this.emDashButton = new EmDashButton(this.pageController);
+    this.toggleMetadataButton = new ToggleMetadataButton(this.controller);
+    this.sceneBreakButton = new SceneBreakButton(this.controller);
+    this.emDashButton = new EmDashButton(this.controller);
   }
 
   register() {
-    this.pageUIToolbar.addItem({
+    this.toolbar.addItem({
       id: ToggleMetadataButton.toggleMetadataItemId,
       menu: 'pinned',
       create: () => this.toggleMetadataButton.createToggleMetadataButton(),
@@ -28,7 +30,7 @@ export class PageUIPinnedButtons {
       },
     });
 
-    this.pageUIToolbar.addItem({
+    this.toolbar.addItem({
       id: SceneBreakButton.sceneBreakItemId,
       menu: 'pinned',
       create: () => this.sceneBreakButton.createSceneBreakButton(),
@@ -37,7 +39,7 @@ export class PageUIPinnedButtons {
       },
     });
 
-    this.pageUIToolbar.addItem({
+    this.toolbar.addItem({
       id: EmDashButton.emDashItemId,
       menu: 'pinned',
       create: () => this.emDashButton.createEmDashButton(),
@@ -48,16 +50,16 @@ export class PageUIPinnedButtons {
   }
 
   unregister() {
-    this.pageUIToolbar.removeItem(ToggleMetadataButton.toggleMetadataItemId);
-    this.pageUIToolbar.removeItem(SceneBreakButton.sceneBreakItemId);
-    this.pageUIToolbar.removeItem(EmDashButton.emDashItemId);
+    this.toolbar.removeItem(ToggleMetadataButton.toggleMetadataItemId);
+    this.toolbar.removeItem(SceneBreakButton.sceneBreakItemId);
+    this.toolbar.removeItem(EmDashButton.emDashItemId);
   }
 }
 
 class ToggleMetadataButton {
   static toggleMetadataItemId = 'toggle-metadata';
 
-  constructor(private pageController: PageController) {}
+  constructor(private controller: PageController) {}
 
   createToggleMetadataButton() {
     const button = document.createElement('button');
@@ -71,12 +73,12 @@ class ToggleMetadataButton {
       return;
     }
 
-    const isVisible = this.pageController.isMetadataVisible();
+    const isVisible = this.controller.tools.isMetadataVisible();
 
     element.textContent = isVisible ? 'Hide Metadata' : 'Show Metadata';
     element.setAttribute('aria-pressed', String(isVisible));
     element.onclick = () => {
-      this.pageController.toggleMetadataVisibility();
+      this.controller.tools.toggleMetadataVisibility();
     };
   }
 }
@@ -84,7 +86,7 @@ class ToggleMetadataButton {
 class SceneBreakButton {
   static sceneBreakItemId = 'scene-break';
 
-  constructor(private pageController: PageController) {}
+  constructor(private controller: PageController) {}
 
   createSceneBreakButton() {
     const button = document.createElement('button');
@@ -100,7 +102,7 @@ class SceneBreakButton {
     }
 
     element.onclick = () => {
-      this.pageController.addOnNextLine('---', true);
+      this.controller.tools.addOnNextLine('---', true);
     };
   }
 }
@@ -108,7 +110,7 @@ class SceneBreakButton {
 class EmDashButton {
   static emDashItemId = 'em-dash';
 
-  constructor(private pageController: PageController) {}
+  constructor(private controller: PageController) {}
 
   createEmDashButton() {
     const button = document.createElement('button');
@@ -124,7 +126,7 @@ class EmDashButton {
     }
 
     element.onclick = () => {
-      this.pageController.addAtCursor('—', true);
+      this.controller.tools.addAtCursor('—', true);
     };
   }
 }
