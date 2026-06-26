@@ -1,10 +1,6 @@
+import { EditorPosition } from 'obsidian';
 import { PageController } from './PageController';
 import { StoryWritingToolsPlugin } from './StoryWritingToolsPlugin';
-
-type EditorPosition = {
-  line: number;
-  ch: number;
-};
 
 export class PageTools {
   constructor(
@@ -74,8 +70,6 @@ export class PageTools {
       editor.setCursor(this.getInsertionEnd(start, insertion));
     }
   }
-
-
 
   private getInsertionEnd(start: EditorPosition, text: string): EditorPosition {
     const lines = text.split('\n');
